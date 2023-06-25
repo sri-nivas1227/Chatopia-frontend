@@ -56,9 +56,36 @@
             e.preventDefault()
             window.location.href = "/join.html"
         })
-        createRoom.addEventListener("click", (e) => {
+        createRoom.addEventListener("click", async (e) => {
             e.preventDefault()
-            
+            const response = await fetch("http://127.0.0.1:5000/create_room", {
+                method: "GET",
+                mode: "cors",
+                headers: {
+
+                    "Content-Type": "application/json"
+                }
+            })
+            if (response.status === 200) {
+                data = await response.json()
+                const room = data['room_id']
+                window.location.href = `/chat.html?room=${room}`
+            }
+        })
+        joinRandom.addEventListener('click', async (e) => {
+            e.preventDefault()
+            const response = await fetch('http://127.0.0.1:5000/join_random', {
+                method: "GET",
+                mode: "cors",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            if (response.status === 200) {
+                data = await response.json()
+                room = data['room_id']
+                window.location.href = `/chat.html?room=${room}`
+            }
         })
     </script>
 </body>
