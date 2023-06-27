@@ -6,10 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatopia</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.0/socket.io.js"
+        integrity="sha512-+sXUwEYakGznuXubXLO/7LWSAPcm+U3NxMJaSu3S5OcvruAAAzaC50Uh4TW9KWj0hA6vfPAjB7E1uuIXgn9vmQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         const searchq = window.location.search
         const roomId = new URLSearchParams(searchq).get("room")
-        console.log(roomId)
+        const socketio = io.connect('http://127.0.0.1:5000/')
+        socketio.on('connect', function () {
+            console.log("socket connected")
+            socketio.emit('join_room', {
+                username: sessionStorage.getItem('username'),
+                room_id: roomId
+            })
+        })
     </script>
 </head>
 
@@ -20,10 +30,12 @@
             <div class="text-xl bg-[#ded0bafe] rounded-t-lg font-mono p-2 flex justify-center text-[#703a1d] font-bold">
                 <p id="chat-title" class="">Chat Room : <b></b></p>
             </div>
-            <div id="message-box" class="h-[85%]"></div>
+            <div id="message-box" class="h-[85%] overflow-auto px-10">
+
+            </div>
             <div id="input-container"
                 class="flex border bg-[#ded0bafe] rounded-b-lg border-white h-[10%] justify-center items-center">
-                <div class="w-full flex justify-center items-center p-2">
+                <form id="message-form" class="w-full flex justify-center items-center p-2">
                     <div class="w-full"><input placeholder="Type something..." type="text" name="message"
                             id="message-input"
                             class="py-2 bg-[#ebca8ffe] rounded-lg placeholder:text-slate-700 font-medium font-mono p-2 w-full">
@@ -37,7 +49,7 @@
                         </svg>
 
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -48,6 +60,73 @@
         console.log(room)
         const roomBlank = document.getElementById('chat-title').querySelector('b')
         roomBlank.innerHTML = room
+        socketio.on("join_room_announcement", function (data) {
+            console.log(data)
+            console.log("join room announcement")
+            const username = sessionStorage.getItem('username')
+            console.log(username)
+            // console.log(data['chats']);
+            const messageBox = document.querySelector("#message-box")
+            messageBox.innerHTML = ''
+            data['chats'].forEach(element => {
+                let messagebubble = document.createElement("div")
+                console.log(element['username'] === username)
+                if (element['username'] === username) {
+                    messagebubble.classList.add('w-full', 'flex', 'justify-end')
+                    messagebubble.innerHTML = `<div class=" max-w-2xl p-2">
+                        <p class="text-[#ddd] bg-[#703a1d] rounded-2xl p-3 text-xl">${element['message']}</div>`
+                    messageBox.append(messagebubble)
+                }
+                else {
+                    messagebubble.classList.add('w-full', 'flex', 'justify-start')
+                    messagebubble.innerHTML = `<div class=" max-w-2xl p-2">
+                        <p id="username" class="text-sm font-semibold text-white">${element['username']}:</p>
+                        <p class="text-slate-700 bg-[#ebca8ffe] rounded-2xl px-2 py-3 text-xl">${element['message']}</div>`
+                    messageBox.append(messagebubble)
+                }
+            });
+            // document.querySelector("#messages").append(messageBox)
+        });
+        const messageInput = document.querySelector("#message-input")
+        document.querySelector("#message-form").addEventListener("submit", (e) => {
+            e.preventDefault()
+            console.log(messageInput.value)
+            let message = messageInput.value.trim();
+            if (message.length) {
+                socketio.emit('send_message', {
+                    username: sessionStorage.getItem("username"),
+                    room: room,
+                    message: message
+                })
+            }
+            messageInput.value = '';
+            messageInput.focus();
+        })
+        socketio.on('receive_message', function (data) {
+            const username = sessionStorage.getItem("username")
+            console.log(data);
+            console.log("receive message event triggered")
+            // const messageDiv = document.querySelector("#messages")
+            const messageBox = document.querySelector("#message-box")
+            const messagebubble = document.createElement("div")
+            console.log(data['username'])
+            console.log(username)
+            console.log(data['username'] == username)
+            if (data['username'] === username) {
+                messagebubble.classList.add('w-full', 'flex', 'justify-end')
+                messagebubble.innerHTML = `<div class=" max-w-2xl p-2">
+                        <p class="text-[#ddd] bg-[#703a1d] rounded-2xl p-3 text-xl">${data['message']}</div>`
+                messageBox.append(messagebubble)
+            }
+            else {
+                messagebubble.classList.add('w-full', 'flex', 'justify-start')
+                messagebubble.innerHTML = `<div class=" max-w-2xl p-2">
+                        <p id="username" class="text-sm font-semibold text-white">${data['username']}:</p>
+                        <p class="text-slate-700 bg-[#ebca8ffe] rounded-2xl px-2 py-3 text-xl">${data['message']}</div>`
+                messageBox.append(messagebubble)
+            }
+        });
+
     </script>
 </body>
 

@@ -68,7 +68,7 @@
                     })
                 })
                 if (response.status === 200) {
-                    localStorage.setItem("username", username)
+                    sessionStorage.setItem("username", username)
                     window.location = '/select.html'
                 }
                 else {
